@@ -28,25 +28,24 @@
     return self;
 }
 -(void)createUI{
-
-    self.contentView.backgroundColor = [UIColor clearColor];
+    
     UIImageView *imageView = [[UIImageView alloc]initWithFrame:CGRectMake(0, 5, MainScreenWidth , 35)];
-//    imageView.backgroundColor = [UIColor yellowColor];
+    //    imageView.backgroundColor = [UIColor yellowColor];
     imageView.image = [UIImage imageNamed:@"bg_searchbar_n_iphone6"];
     [self.contentView addSubview:imageView];
-
+    
     
     
     UITextField *textField  = [[UITextField alloc]initWithFrame:CGRectMake(50, 5, MainScreenWidth -100, 35)];
-//    textField.placeholder = @"快速搜索关键字";
-//    textField.backgroundColor = [UIColor whiteColor];
-
+    //    textField.placeholder = @"快速搜索关键字";
+    //    textField.backgroundColor = [UIColor whiteColor];
+    
     NSMutableParagraphStyle *style = [textField.defaultTextAttributes[NSParagraphStyleAttributeName] mutableCopy];
     
     style.minimumLineHeight = textField.font.lineHeight - (textField.font.lineHeight - [UIFont systemFontOfSize:10.0].lineHeight) / 2.0;
     
     textField.attributedPlaceholder = [[NSAttributedString alloc] initWithString:@"快速搜索关键字"
-                                    attributes:
+                                                                      attributes:
                                        @{
                                          
                                          NSForegroundColorAttributeName: CYRGBColor(194, 178, 160),
@@ -64,16 +63,29 @@
     
     textField.delegate = self;
     
+    textField.returnKeyType = UIReturnKeySearch;
     
+    [textField addTarget:self action:@selector(chageValue:) forControlEvents:UIControlEventEditingChanged];
 }
 
-
+-(void)chageValue:(UITextField *)textField{
+    
+    if ([self.listNoteHeaderDelegate respondsToSelector:@selector(searchNote:)]) {
+        [self.listNoteHeaderDelegate searchNote:textField.text];
+    }
+    NSLog(@"text : %@",textField.text);
+}
 #pragma mark UITextFieldDelegate
+
 -(BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string{
     
     
     if ([string isEqualToString:@"\n"]) {
         [textField resignFirstResponder];
+        
+        if ([self.listNoteHeaderDelegate respondsToSelector:@selector(searchNote:)]) {
+            [self.listNoteHeaderDelegate searchNote:textField.text];
+        }
     }
     
     return YES;

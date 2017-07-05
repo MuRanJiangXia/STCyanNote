@@ -7,7 +7,12 @@
 //
 
 #import <UIKit/UIKit.h>
+@protocol ListNoteHeaderDelegate<NSObject>
 
+-(void)searchNote:(NSString *)noteText;
+
+@end
 @interface ListNoteHeaderView : UITableViewHeaderFooterView
+@property(nonatomic,weak)id<ListNoteHeaderDelegate> listNoteHeaderDelegate;
 
 @end

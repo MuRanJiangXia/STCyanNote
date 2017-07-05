@@ -16,6 +16,7 @@
     CyanTextView  *_noteTextView;
     UIScrollView *_bgScroll;
     
+    CGFloat  _keyHeight;
     //超出的height 包括头 和预留的尾部
     CGFloat  _beyondHeight;
     //根据获取光标位置
@@ -45,22 +46,21 @@
 }
 -(void)viewDidDisappear:(BOOL)animated{
     [super viewDidDisappear:animated];
-
+    
 }
 
 -(void)viewWillDisappear:(BOOL)animated{
     [super viewWillDisappear:animated];
     //收键盘 保存数据
     [_noteTextView resignFirstResponder];
-
+    
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-
-    _dbAccess = [DBAccess shareInstance];
     
+    _dbAccess = [DBAccess shareInstance];
     _beyondHeight = 35 + 60;
     //增加监听，当键盘出现或改变时收出消息
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -77,7 +77,9 @@
     [self creatNavBtn];
     [self creatContexView];
     [self  loadData];
-
+    //    [self copyBtnClick];
+    //    [self initImageView];
+    
 }
 
 
@@ -86,15 +88,55 @@
     _noteTextView.text = self.noteModel.note;
     _collectonBtn.selected = [self.noteModel.isCollectioned boolValue];
     if (!_noteModel.noteId) {
-     _timeLabel.text = [CYTools getYearAndMonthAndDayAndHour];
+        _timeLabel.text = [CYTools getYearAndMonthAndDayAndHour];
     }else{
-    _timeLabel.text = self.noteModel.noteTime;
+        _timeLabel.text = self.noteModel.noteTime;
     }
- 
+    
+}
+//改变字体
+-(void)loadTextAttri{
+    //    textview 改变字体的行间距
+    NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+    //    26
+    paragraphStyle.lineSpacing = 10;// 字体的行间距
+    NSDictionary *attributes = @{
+                                 
+                                 NSFontAttributeName:[UIFont systemFontOfSize:16],
+                                 NSParagraphStyleAttributeName:paragraphStyle
+                                 
+                                 };
+    //
+    _noteTextView.attributedText = [[NSAttributedString alloc]
+                                    initWithString:_noteTextView.text attributes:attributes];
 }
 
+-(void)initImageView{
+    
+    _imageView = [[UIImageView alloc]initWithFrame:CGRectMake(0, 35, MainScreenWidth, 30 *2)];
+    _imageView.backgroundColor = [UIColor yellowColor];
+    _imageView.image = [UIImage imageNamed:@"150"];
+    [_bgScroll addSubview:_imageView];
+    
+    _imageView.userInteractionEnabled= YES;
+    
+    // 要把 35 减去
+    CGRect frame = CGRectMake(0, 0, MainScreenWidth, 30 *2);
+    //获取图片的  路径 然后添加到textview中
+    UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:frame
+                                                    cornerRadius:_imageView.layer.cornerRadius];
+    
+    _noteTextView.textContainer.exclusionPaths = @[path];
+    
+    
+    UIPanGestureRecognizer *g = [[UIPanGestureRecognizer alloc]initWithTarget:self action:@selector(panAction:)];
+    
+    [_imageView addGestureRecognizer:g];
+    //刷新 textview
+    [_noteTextView setNeedsLayout];
+}
 -(void)creatContexView{
-
+    
     _bgScroll = [[UIScrollView alloc]initWithFrame:CGRectMake(0, 0, MainScreenWidth, MainScreenHeight - 64 )];
     _bgScroll.backgroundColor = [UIColor clearColor];
     
@@ -103,88 +145,93 @@
     _bgScroll.showsVerticalScrollIndicator = NO;
     
     _bgScroll.bounces  = YES;
-//    _bgScroll.pagingEnabled = YES;
+    //    _bgScroll.pagingEnabled = YES;
     [self.view addSubview:_bgScroll];
     
     //给texview添加一个头
     {
-    CGFloat headerHeight = 35;
+        CGFloat headerHeight = 35;
         
-    UIView *textHeader = [[UIView alloc]initWithFrame:CGRectMake(0, 0, MainScreenWidth, headerHeight)];
-    textHeader.backgroundColor = CYRGBColor(247, 243, 234);
-    [_bgScroll addSubview:textHeader];
-    
+        UIView *textHeader = [[UIView alloc]initWithFrame:CGRectMake(0, 0, MainScreenWidth, headerHeight)];
+        textHeader.backgroundColor = CYRGBColor(247, 243, 234);
+        [_bgScroll addSubview:textHeader];
         
         
-    UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
-    button.frame = CGRectMake(20 +  4,10 , 80, 15);
-//    button.backgroundColor = [UIColor purpleColor];
-    [button setTitle:@"全部便签" forState:UIControlStateNormal];
+        
+        UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
+        button.frame = CGRectMake(20 +  4,10 , 80, 15);
+        //    button.backgroundColor = [UIColor purpleColor];
+        [button setTitle:@"全部便签" forState:UIControlStateNormal];
         [button setTitleColor:CYRGBColor(194, 178, 160) forState:UIControlStateNormal];
-    UIImage *image = [UIImage imageNamed:@"detail_button_all"];
-    image = [image stretchableImageWithLeftCapWidth:0.6 * image.size.width topCapHeight:0 ];
-    [button setBackgroundImage:image forState:UIControlStateNormal];
+        UIImage *image = [UIImage imageNamed:@"detail_button_all"];
+        image = [image stretchableImageWithLeftCapWidth:0.6 * image.size.width topCapHeight:0 ];
+        [button setBackgroundImage:image forState:UIControlStateNormal];
         
-    button.titleLabel.font = [UIFont systemFontOfSize:12];
-    
-    [textHeader addSubview:button];
-     
-    
-   
-    _timeLabel = [[UILabel alloc]initWithFrame:CGRectMake(button.right + 2, 0, 160, headerHeight)];
-    _timeLabel.text = @"shijian 10:23:44";
-    _timeLabel.textColor = CYRGBColor(194, 178, 160);
-    _timeLabel.textAlignment = NSTextAlignmentCenter;
-    _timeLabel.font = [UIFont systemFontOfSize:12];
-    [textHeader addSubview:_timeLabel];
-
- 
-
-    //类型按钮
-    UIButton *typeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
-    typeBtn.frame = CGRectMake(MainScreenWidth - 15  -5 , 12, 11, 11);
-    [typeBtn setBackgroundImage:[UIImage imageNamed:@"sinaweibo_accountmanage_drawer"] forState:UIControlStateNormal];
-    
-    [textHeader addSubview:typeBtn];
-
-    //收藏按钮
-    _collectonBtn = [UIButton buttonWithType:UIButtonTypeCustom];
-    _collectonBtn.frame = CGRectMake(typeBtn.left - 15 - 20, 10, 15, 15);
-//    collectonBtn.backgroundColor = [UIColor purpleColor];
-
-    [_collectonBtn setBackgroundImage:[UIImage imageNamed:@"star_big_normal"] forState:UIControlStateNormal];
+        button.titleLabel.font = [UIFont systemFontOfSize:12];
         
-    [_collectonBtn setBackgroundImage:[UIImage imageNamed:@"star_big_selected"] forState:UIControlStateSelected];
-
-
-    //    [collectonBtn addTarget:self action:@selector(buttonAction:) forControlEvents:UIControlEventTouchUpInside];
-    [textHeader addSubview:_collectonBtn];
         
-    {
-        //左侧view
-        UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, 20, headerHeight)];
-        view.backgroundColor = CYRGBColor(243, 232, 224);
-        [textHeader addSubview:view];
+        //    [button addTarget:self action:@selector(buttonAction:) forControlEvents:UIControlEventTouchUpInside];
+        [textHeader addSubview:button];
         
-        UIView *lineV = [[UIView alloc]initWithFrame:CGRectMake(19, 0, 1, headerHeight)];
-        lineV.backgroundColor = CYRGBColor(238, 228, 215);
-        [textHeader addSubview:lineV];
         
-        UIView *lineH = [[UIView alloc]initWithFrame:CGRectMake(0, 34,MainScreenWidth  ,1 )];
-        lineH.backgroundColor = CYRGBColor(238, 228, 215);
-        [textHeader addSubview:lineH];
+        
+        _timeLabel = [[UILabel alloc]initWithFrame:CGRectMake(button.right + 2, 0, 160, headerHeight)];
+        //    label.backgroundColor = [UIColor redColor];
+        _timeLabel.text = @"shijian 10:23:44";
+        _timeLabel.textColor = CYRGBColor(194, 178, 160);
+        _timeLabel.textAlignment = NSTextAlignmentCenter;
+        _timeLabel.font = [UIFont systemFontOfSize:12];
+        [textHeader addSubview:_timeLabel];
+        
+        
+        
+        //类型按钮
+        UIButton *typeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        typeBtn.frame = CGRectMake(MainScreenWidth - 15  -5 , 12, 11, 11);
+        //    typeBtn.backgroundColor = [UIColor yellowColor];
+        //    [button addTarget:self action:@selector(buttonAction:) forControlEvents:UIControlEventTouchUpInside];
+        [typeBtn setBackgroundImage:[UIImage imageNamed:@"sinaweibo_accountmanage_drawer"] forState:UIControlStateNormal];
+        
+        [textHeader addSubview:typeBtn];
+        
+        //收藏按钮
+        _collectonBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        _collectonBtn.frame = CGRectMake(typeBtn.left - 15 - 20, 10, 15, 15);
+        //    collectonBtn.backgroundColor = [UIColor purpleColor];
+        
+        [_collectonBtn setBackgroundImage:[UIImage imageNamed:@"star_big_normal"] forState:UIControlStateNormal];
+        
+        [_collectonBtn setBackgroundImage:[UIImage imageNamed:@"star_big_selected"] forState:UIControlStateSelected];
+        
+        
+        //    [collectonBtn addTarget:self action:@selector(buttonAction:) forControlEvents:UIControlEventTouchUpInside];
+        [textHeader addSubview:_collectonBtn];
+        
+        {
+            //左侧view
+            UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, 20, headerHeight)];
+            view.backgroundColor = CYRGBColor(243, 232, 224);
+            [textHeader addSubview:view];
+            
+            UIView *lineV = [[UIView alloc]initWithFrame:CGRectMake(19, 0, 1, headerHeight)];
+            lineV.backgroundColor = CYRGBColor(238, 228, 215);
+            [textHeader addSubview:lineV];
+            
+            UIView *lineH = [[UIView alloc]initWithFrame:CGRectMake(0, 34,MainScreenWidth  ,1 )];
+            lineH.backgroundColor = CYRGBColor(238, 228, 215);
+            [textHeader addSubview:lineH];
+            
+            
+        }
         
         
     }
-        
     
-    }
     
-
     
     _noteTextView = [[CyanTextView alloc]initWithFrame:CGRectMake(0, 35, MainScreenWidth,676 -6.3 )];
     _noteTextView.backgroundColor = CYRGBColor(247, 243, 234);
-
+    
     _noteTextView.textColor = CYRGBColor(96, 18, 0);
     _noteTextView.tintColor =  CYRGBColor(96, 18, 0);
     _noteTextView.delegate = self;
@@ -192,8 +239,8 @@
     [_bgScroll addSubview:_noteTextView];
     
     //设置边距
-//    _noteTextView.textContainerInset = UIEdgeInsetsMake(0, 0, 0, 0);
-
+    //    _noteTextView.textContainerInset = UIEdgeInsetsMake(0, 0, 0, 0);
+    
     _noteTextView.scrollEnabled = NO;
     
     NSMutableParagraphStyle *paragraphStyle = [NSMutableParagraphStyle new];
@@ -246,8 +293,8 @@
     
     [button2 setImage:[UIImage imageNamed:@"btn_delete"] forState:UIControlStateNormal];
     [button2 setImage:[UIImage imageNamed:@"btn_camera"] forState:UIControlStateSelected];
-
-//
+    
+    //
     [button2 setBackgroundImage: [self cyStrecthImage:[UIImage imageNamed:@"btn_red_bg_n"]] forState:UIControlStateNormal];
     [button2 setBackgroundImage: [self cyStrecthImage:[UIImage imageNamed:@"btn_bg_n"]] forState:UIControlStateSelected];
     
@@ -270,7 +317,7 @@
     
     UIBarButtonItem *shareItem = [[UIBarButtonItem alloc]initWithCustomView:shareBtn];
     UIBarButtonItem *deleteItem = [[UIBarButtonItem alloc]initWithCustomView:button2];
-
+    
     
     //解决按钮不靠左 靠右的问题.
     UIBarButtonItem *nagetiveSpacer2 = [[UIBarButtonItem alloc]initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
@@ -287,11 +334,44 @@
     
 }
 
-
+//图片添加手势
+-(void)panAction:(UIPanGestureRecognizer *)pan{
+    
+    CGPoint p = [pan locationInView:_noteTextView];
+    NSLog(@"_imageView.top : %f",_imageView.top);
+    
+    //
+    _imageView.center = CGPointMake(_imageView.center.x, p.y);
+    
+    //    NSString *text  = _noteTextView.text
+    [self reloadImageViewLocation];
+}
+//刷新 图片位置
+-(void)reloadImageViewLocation{
+    // 要把 35 减去
+    
+    CGRect frame = CGRectMake(0, _imageView.top - 35, MainScreenWidth, 100);
+    //    NSLog(@"选中区域 frame : %@",NSStringFromCGRect(frame));
+    UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:frame
+                                                    cornerRadius:_imageView.layer.cornerRadius];
+    _noteTextView.textContainer.exclusionPaths = @[path];
+    
+    
+    //    NSLog(@"width : %f ,height : %f",   _noteTextView.contentSize.width,   _noteTextView.contentSize.height);
+    //    NSLog(@"width : %f ,height : %f", _noteTextView.textContainer.size.width,_noteTextView.textContainer.size.height);
+    
+    
+    //设置边距
+    //    CGFloat padding = _noteTextView.textContainer.lineFragmentPadding;
+    //
+    //    _noteTextView.textContainerInset = UIEdgeInsetsMake(0, -padding, 0, -padding);
+    //刷新 textview
+    //    [_noteTextView setNeedsLayout];
+}
 -(void)shareAction:(UIButton *)btn{
     
     [_noteTextView resignFirstResponder];
-
+    
     [self reloadNavBtn:NO];
     NSLog(@"分享");
 }
@@ -317,7 +397,7 @@
 
 /**插入图片*/
 - (void)copyBtnClick{
-
+    
     NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithAttributedString:_noteTextView.attributedText];
     
     NSTextAttachment *textAttachment = [[NSTextAttachment alloc] initWithData:nil ofType:nil] ;
@@ -329,11 +409,11 @@
     
     textAttachment.bounds = CGRectMake(0, 0, MainScreenWidth, widthHight * MainScreenWidth);
     
-
+    
     
     NSAttributedString *textAttachmentString = [NSAttributedString attributedStringWithAttachment:textAttachment] ;
     [string insertAttributedString:textAttachmentString atIndex:0];//index为用户指定要插入图片的位置
-//    [string insertAttributedString:textAttachmentString atIndex:_noteTextView.selectedRange.location];//index为用户指定要插入图片的位置
+    //    [string insertAttributedString:textAttachmentString atIndex:_noteTextView.selectedRange.location];//index为用户指定要插入图片的位置
     _noteTextView.attributedText = string;
     
 }
@@ -352,30 +432,30 @@
     [self reloadNavBtn:YES];
     //编辑状态的时候需要解决键盘遮挡问题， bgSrollview frame向上移动
     //添加图片
-//    [self copyBtnClick];
-//里延时调用一个函数，只要延0.1s，之后再获取光标就正常了
+    //    [self copyBtnClick];
+    //里延时调用一个函数，只要延0.1s，之后再获取光标就正常了
     [self performSelector:@selector(textViewDidChange:) withObject:textView afterDelay:0.1f];
-
+    
     
     return YES;
 }
 
 -(BOOL)textView:(UITextView *)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text{
-
-//    [self performSelector:@selector(loadTextAttri) withObject:nil afterDelay:0.1];
+    
+    //    [self performSelector:@selector(loadTextAttri) withObject:nil afterDelay:0.1];
     if ([text isEqualToString:@"\n"]) {
         
-//        [self loadTextAttri];
-
+        //        [self loadTextAttri];
+        
         //获取光标位置
         CGFloat cursorPosition= [textView caretRectForPosition:textView.selectedTextRange.start].origin.y;
-    
+        
         if (cursorPosition < _imageView.top) {
             [UIView animateWithDuration:0.1 animations:^{
                 
                 _imageView.top = _imageView.top + 19.093750 + 10;
-              
-//                [self reloadImageViewLocation];
+                
+                //                [self reloadImageViewLocation];
                 
             } completion:^(BOOL finished) {
                 
@@ -388,7 +468,7 @@
 }
 
 -(void)textViewDidChange:(UITextView *)textView{
-
+    
     //获取光标位置
     CGFloat cursorPosition;
     if (textView.selectedTextRange) {
@@ -397,9 +477,9 @@
         cursorPosition = 0;
     }
     _moveHeight = cursorPosition;
-    NSLog(@"开始获取 cursorPosition : %f",cursorPosition);
- 
-//    static CGFloat maxHeight = 667.f;
+    //    NSLog(@"开始获取 cursorPosition : %f",cursorPosition);
+    
+    static CGFloat maxHeight = 667.f;
     CGRect frame = textView.frame;
     CGSize constraintSize = CGSizeMake(frame.size.width, MAXFLOAT);
     CGSize size = [textView sizeThatFits:constraintSize];
@@ -411,13 +491,13 @@
     }
     
     textView.frame = CGRectMake(frame.origin.x, frame.origin.y, frame.size.width, size.height);
-    NSLog(@"size.height : %f ,contentSize.height :  %f ",size.height,_bgScroll.contentSize.height);
+    //    NSLog(@"size.height : %f ,contentSize.height :  %f ",size.height,_bgScroll.contentSize.height);
     if (size.height + _beyondHeight >  _noteTextView.contentSize.height) {
-//        [self reloadBGScrollView];
-         _bgScroll.contentSize = CGSizeMake(MainScreenWidth, size.height + _beyondHeight);
+        //        [self reloadBGScrollView];
+        _bgScroll.contentSize = CGSizeMake(MainScreenWidth, size.height + _beyondHeight);
     }
-
-
+    
+    
     
 }
 
@@ -428,9 +508,8 @@
     /**
      获取textview 的第一行文本
      */
-
-     NSArray *arr   = [CYTools getLinesArrayOfStringInLabel:textView];
     
+    NSArray *arr   = [CYTools getLinesArrayOfStringInLabel:textView];
     
     /**
      两性婚姻，一堂缔约，良缘永结，匹配同称
@@ -442,13 +521,15 @@
             return;
         }
         NoteModel *note = [[NoteModel alloc]init];
-
+        
         note.noteTime = time;
         note.noteTitle = arr[0];
         note.isCollectioned = @"0";
         note.note = textView.text;
         //        note.noteImage = @"";
         [_dbAccess saveNoteWithFMDB:note];
+        //更改一下model
+        self.noteModel =    [_dbAccess findAllUsersWithFMDB][0];
     }else{
         if (arr.count == 0) {//删除
             [_dbAccess deleteNote:self.noteModel];
@@ -459,9 +540,9 @@
             self.noteModel.note = textView.text;
             [_dbAccess upDateNote:self.noteModel];
         }
-   
+        
     }
-
+    
     
 }
 
@@ -499,14 +580,15 @@
      2014-12-31 11:33:57.258 Demo[1014:53043] 键盘高度是  264
      2014-12-31 11:33:57.258 Demo[1014:53043] 键盘宽度是  768
      */
-
+    
     NSDictionary *userInfo = [aNotification userInfo];
     NSValue *aValue = [userInfo objectForKey:UIKeyboardFrameEndUserInfoKey];
     CGRect keyboardRect = [aValue CGRectValue];
     int height = keyboardRect.size.height;
-//    NSLog(@"键盘高度是  %d",height);
-//    NSLog(@"键盘宽度是  %d",width);
-//    NSLog(@"center.y :%f",_bgScroll.center.y);
+    int width = keyboardRect.size.width;
+    //    NSLog(@"键盘高度是  %d",height);
+    //    NSLog(@"键盘宽度是  %d",width);
+    //    NSLog(@"center.y :%f",_bgScroll.center.y);
     [UIView animateWithDuration:0.3 animations:^{
         _bgScroll.frame = CGRectMake(0, 0, MainScreenWidth, MainScreenHeight - 64 - height);
         //光标位置加上 导航栏高度 加上头部高度， 如果在键盘下面 减去相对高度
@@ -514,7 +596,7 @@
         if ( selectedHeight > 0) {//移动scrollview 使光标永远在键盘上面
             [_bgScroll setContentOffset:CGPointMake(_bgScroll.contentOffset.x, selectedHeight) animated:YES];
             
-        
+            
             
         }
     }];
@@ -523,11 +605,20 @@
 //当键退出时调用
 - (void)keyboardWillHide:(NSNotification *)aNotification
 {
-
+    _moveHeight = 0;
+    
+    NSDictionary *userInfo = [aNotification userInfo];
+    NSValue *aValue = [userInfo objectForKey:UIKeyboardFrameEndUserInfoKey];
+    CGRect keyboardRect = [aValue CGRectValue];
+    int height = keyboardRect.size.height;
+    int width = keyboardRect.size.width;
+    //    NSLog(@"键盘高度是  %d",height);
+    //    NSLog(@"键盘宽度是  %d",width);
+    
     [UIView animateWithDuration:0.3 animations:^{
         _bgScroll.frame = CGRectMake(0, 0, MainScreenWidth, MainScreenHeight - 64 );
     }];
-    
+    _keyHeight = 0;
 }
 
 

@@ -21,6 +21,7 @@
 -(BOOL)upDateNote:(NoteModel *)note;
 
 -(NSArray *)findAllUsersWithFMDB;
+-(NSArray *)findNotesBy:(NSString *)note;
 
 
 -(NoteModel *)findNOteById:(int)noteId;

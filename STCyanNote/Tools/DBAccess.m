@@ -81,7 +81,7 @@ static DBAccess *instace = nil;
         NSLog(@"打开数据库失败");
         return;
     }
-
+    
     /**
      时间 ，文本内容， 图片（可以为空）, 是否收藏
      */
@@ -110,7 +110,7 @@ static DBAccess *instace = nil;
     }
     //关闭数据库
     sqlite3_close(database);
-
+    
     
 }
 
@@ -145,8 +145,8 @@ static DBAccess *instace = nil;
 //删除某个
 -(BOOL)deleteNote:(NoteModel *)note{
     
-
-
+    
+    
     FMDatabase *database = [[FMDatabase alloc]initWithPath:[self databasePath]];
     
     //1.打开数据库
@@ -156,7 +156,7 @@ static DBAccess *instace = nil;
     NSString *sqlString = @"delete from user where id = ?";
     
     //写入数据
-   int result =  [database executeUpdate:sqlString,[NSString stringWithFormat:@"%d",note.noteId]];
+    int result =  [database executeUpdate:sqlString,[NSString stringWithFormat:@"%d",note.noteId]];
     //关闭数据
     [database close];
     
@@ -165,11 +165,11 @@ static DBAccess *instace = nil;
 
 //修改某个
 -(BOOL)upDateNote:(NoteModel *)note{
-//    *isCollectioned;
-//    *noteTitle;
-//    *noteTime;
-//    *note;
-//    *noteImage;
+    //    *isCollectioned;
+    //    *noteTitle;
+    //    *noteTime;
+    //    *note;
+    //    *noteImage;
     
     FMDatabase *database = [[FMDatabase alloc]initWithPath:[self databasePath]];
     
@@ -180,7 +180,7 @@ static DBAccess *instace = nil;
     NSString *sqlString = @"update user set noteTitle = ?, noteTime = ?, note = ?, isCollectioned = ?, noteImage = ? where id = ?";
     
     //写入数据
-   int result =  [database executeUpdate:sqlString,note.noteTitle,note.noteTime, note.note,note.isCollectioned,note.noteImage,[NSString stringWithFormat:@"%d", note.noteId]];
+    int result =  [database executeUpdate:sqlString,note.noteTitle,note.noteTime, note.note,note.isCollectioned,note.noteImage,[NSString stringWithFormat:@"%d", note.noteId]];
     //关闭数据
     [database close];
     
@@ -188,6 +188,44 @@ static DBAccess *instace = nil;
 }
 
 
+/**
+ 搜索相关的 notes
+ 
+ @param note 搜索字符串
+ @return notemedel 数组
+ */
+-(NSArray *)findNotesBy:(NSString *)note{
+    FMDatabase *database = [[FMDatabase alloc]initWithPath:[self databasePath]];
+    
+    //打开数据库
+    [database open];
+    //编写数据库
+    //所有数据
+    //    NSString *sql = @"select * from user u";
+    //    KEY_ENDTIME ASC 升序
+    //    KEY_ENDTIME DESC 降序
+    NSString *sql = [NSString stringWithFormat:@"select * from user u where u.note like '%%%@%%'",note];
+    FMResultSet *resultSet = [database executeQuery:sql];
+    //3
+    NSMutableArray *array  = [NSMutableArray array];
+    NoteModel *noteModel = nil;
+    while (resultSet.next) {
+        //索引值是从0开始的.
+        noteModel = [[NoteModel alloc]init];
+        noteModel.noteId = [resultSet[0] intValue];
+        noteModel.noteTitle = resultSet[1];
+        noteModel.noteTime = resultSet[2];
+        noteModel.note = resultSet[3];
+        noteModel.isCollectioned = resultSet[4];
+        noteModel.noteImage = resultSet[5];
+        
+        [array addObject:noteModel];
+    }
+    
+    
+    
+    return array;
+}
 //找出所有 数据
 -(NSArray *)findAllUsersWithFMDB{
     FMDatabase *database = [[FMDatabase alloc]initWithPath:[self databasePath]];
@@ -196,9 +234,9 @@ static DBAccess *instace = nil;
     [database open];
     //编写数据库
     //所有数据
-//    NSString *sql = @"select * from user u";
-//    KEY_ENDTIME ASC 升序
-//    KEY_ENDTIME DESC 降序
+    //    NSString *sql = @"select * from user u";
+    //    KEY_ENDTIME ASC 升序
+    //    KEY_ENDTIME DESC 降序
     NSString *sql = @"select * from user u order by datetime(u.id) DESC";
     FMResultSet *resultSet = [database executeQuery:sql];
     //3
@@ -213,7 +251,7 @@ static DBAccess *instace = nil;
         note.note = resultSet[3];
         note.isCollectioned = resultSet[4];
         note.noteImage = resultSet[5];
-
+        
         [array addObject:note];
     }
     
@@ -244,7 +282,7 @@ static DBAccess *instace = nil;
         note.note = resultSet[3];
         [array addObject:note];
     }
-
+    
     return note;
 }
 /**
@@ -254,7 +292,7 @@ static DBAccess *instace = nil;
 -(void)addColumn:(NSString *)columnName byTable:(NSString *)tableName type:(NSString *)type {
     
     [self isHaveColumn];
-//    alter table table add column l列名 数据类型
+    //    alter table table add column l列名 数据类型
     FMDatabase *database = [[FMDatabase alloc]initWithPath:[self databasePath]];
     
     //1.打开数据库
@@ -282,11 +320,11 @@ static DBAccess *instace = nil;
         
         NSLog(@"存在这个字段");
     }
-
+    
     //关闭数据
     [database close];
     
-
+    
 }
 
 /**
@@ -429,7 +467,7 @@ static DBAccess *instace = nil;
     
     //写入数据
     int reslut =   [database executeUpdate:sqlString];
-
+    
     NSLog(@"%d",reslut);
     //关闭数据
     [database close];
